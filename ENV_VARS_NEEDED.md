@@ -24,14 +24,27 @@ These environment variables must be set in your `app.yaml` or `.env` file for `d
 
 Add these to your `app.yaml` in the `env:` section:
 
+#### ⚠️ IMPORTANT: Create Your Own AI Agent
+
+**You MUST create your own Databricks AI agent** - you cannot reuse the example endpoint below!
+
+**Steps:**
+1. In Databricks: Go to **Machine Learning → Serving**
+2. Click **"Create serving endpoint"**
+3. Choose your model (GPT-4, Llama, etc.)
+4. Name it (e.g., `fortnite-analytics-agent`)
+5. Copy your endpoint name → use it below as `AI_AGENT_ENDPOINT`
+
 ```yaml
 # AI Agent endpoint name (for the chatbot)
+# ⚠️ REPLACE THIS with YOUR OWN endpoint name from Databricks ML Serving
 - name: AI_AGENT_ENDPOINT
-  value: "mas-aafd6535-endpoint"
+  value: "your-ai-agent-endpoint"  # ← Change this!
 
 # Databricks dashboard ID (for embedded analytics)
+# Get this from: Dashboards → Your Dashboard → Share → Embed
 - name: DATABRICKS_DASHBOARD_ID
-  value: "01f0ba94e7c913139b4e56d03c6c7e94"
+  value: "your-dashboard-id-here"  # ← Change this!
 
 # Optional: Workspace ID (usually auto-extracted from hostname)
 # - name: DATABRICKS_WORKSPACE_ID

@@ -116,8 +116,32 @@ env:
 | `DATABRICKS_HTTP_PATH` | SQL Warehouses → Your Warehouse → Connection Details |
 | `DATABRICKS_TOKEN` | User Settings → Developer → Access Tokens |
 | `DATABRICKS_SCHEMA` | Data Explorer in Databricks |
-| `AI_AGENT_ENDPOINT` | Machine Learning → Serving → Your Endpoint |
+| `AI_AGENT_ENDPOINT` | Machine Learning → Serving → Your Endpoint (see below) |
 | `DATABRICKS_DASHBOARD_ID` | Dashboards → Share → Embed |
+
+---
+
+## 🤖 Creating Your AI Agent
+
+The chatbot feature requires a Databricks AI agent. **You must create your own agent** - you cannot use someone else's endpoint.
+
+### **Steps to Create an AI Agent:**
+
+1. **In Databricks, go to:** Machine Learning → Serving
+2. **Create a new serving endpoint:**
+   - Click "Create serving endpoint"
+   - Choose a model (e.g., GPT-4, Llama, or custom)
+   - Name your endpoint (e.g., "fortnite-analytics-agent")
+3. **Get the endpoint name:**
+   - Once deployed, copy the endpoint name
+   - Set this as `AI_AGENT_ENDPOINT` in your `app.yaml`
+4. **Test the endpoint:**
+   - Use the "Query" tab to verify it's working
+   - Your endpoint URL will be: `https://your-workspace.azuredatabricks.net/serving-endpoints/YOUR-ENDPOINT-NAME/invocations`
+
+> **Note:** If you don't have access to AI agents or want to skip the chatbot feature, you can:
+> - Leave `AI_AGENT_ENDPOINT` as `"your-ai-agent-endpoint"` (chatbot will show an error message)
+> - Comment out the chatbot section in the app layout
 
 ---
 
