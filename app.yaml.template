@@ -1,0 +1,65 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🚀 DATABRICKS APP CONFIGURATION - TEMPLATE
+# ═══════════════════════════════════════════════════════════════════════════════
+# 
+# ⚠️  DO NOT COMMIT THIS FILE WITH REAL CREDENTIALS!
+# 
+# Instructions:
+# 1. Copy this file to app.yaml
+# 2. Replace all placeholder values with your actual Databricks credentials
+# 3. Add app.yaml to .gitignore
+# 4. Only commit this template file to Git
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+command: [
+  "python",
+  "databricks_git_app.py"
+]
+
+env:
+  # Your Databricks workspace hostname (without https://)
+  # Example: adb-1234567890123456.7.azuredatabricks.net
+  # Where to find: Look at your browser URL when logged into Databricks
+  - name: DATABRICKS_SERVER_HOSTNAME
+    value: "your-workspace.azuredatabricks.net"
+  
+  # SQL Warehouse HTTP path
+  # Example: sql/warehouses/abc123def456789
+  # Where to find: SQL Warehouses → Your Warehouse → Connection Details tab
+  - name: DATABRICKS_HTTP_PATH
+    value: "sql/warehouses/your-warehouse-id"
+  
+  # Personal Access Token
+  # Example: dapiXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  # Where to find: User Settings → Developer → Access Tokens → Generate New Token
+  # ⚠️  KEEP THIS SECRET! Never commit real tokens to Git!
+  - name: DATABRICKS_TOKEN
+    value: "your-token-here"
+  
+  # Schema name where your data tables are stored
+  # Example: your_catalog.your_schema
+  # Where to find: Data Explorer in Databricks
+  - name: DATABRICKS_SCHEMA
+    value: "your_catalog.your_schema"
+  
+  # AI Agent serving endpoint name (if using AI chatbot feature)
+  # Example: your-ai-agent-endpoint
+  # Where to find: Machine Learning → Serving → Your Endpoint
+  - name: AI_AGENT_ENDPOINT
+    value: "your-ai-agent-endpoint"
+  
+  # OPTIONAL: Databricks dashboard ID for embedded analytics (if using dashboard feature)
+  # Example: 01abc123def456789
+  # Where to find: Dashboards → Share → Embed → Copy the ID from the URL
+  - name: DATABRICKS_DASHBOARD_ID
+    value: "your-dashboard-id-here"
+
+# Python dependencies required by the app
+dependencies:
+  - dash>=2.14.0
+  - plotly>=5.18.0
+  - pandas>=2.0.0
+  - databricks-sql-connector>=3.0.0
+  - requests>=2.28.0
+

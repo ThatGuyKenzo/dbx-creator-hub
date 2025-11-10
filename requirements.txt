@@ -1,0 +1,14 @@
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Visualization libraries
+plotly>=5.18.0
+dash>=2.14.0
+kaleido>=0.2.1
+
+# Databricks connectivity
+databricks-sql-connector>=3.0.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
