@@ -127,11 +127,8 @@ The chatbot feature requires a Databricks AI agent. **You must create your own a
 
 ### **Steps to Create an AI Agent:**
 
-1. **In Databricks, go to:** Machine Learning → Serving
-2. **Create a new serving endpoint:**
-   - Click "Create serving endpoint"
-   - Choose a model (e.g., GPT-4, Llama, or custom)
-   - Name your endpoint (e.g., "fortnite-analytics-agent")
+1. **In Databricks, create:** A Genie Agent, a RAG Agent (directed at a streaming table of live industry news), and an Orchestrator agent to manage these two
+2. **Create a new serving endpoint:** Create a serving endpoint for this orchestrator agent.
 3. **Get the endpoint name:**
    - Once deployed, copy the endpoint name
    - Set this as `AI_AGENT_ENDPOINT` in your `app.yaml`
