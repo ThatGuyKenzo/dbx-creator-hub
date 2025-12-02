@@ -54,6 +54,18 @@ env:
   # Where to find: Dashboards → Share → Embed → Copy the ID from the URL
   - name: DATABRICKS_DASHBOARD_ID
     value: "your-dashboard-id-here"
+  
+  # OPTIONAL: Databricks workspace ID for embedded dashboard
+  # Example: 984752964297111
+  # Where to find: Your Databricks URL, the ID is after ?o= parameter
+  - name: DATABRICKS_WORKSPACE_ID
+    value: "your-workspace-id-here"
+  
+  # OPTIONAL: Social Listening App URL for embedded social listening feature
+  # Example: https://social-listening-app.aws.databricksapps.com/
+  # Where to find: Your deployed Social Listening Databricks App URL
+  - name: SOCIAL_LISTENING_URL
+    value: "https://your-social-listening-app.databricksapps.com/"
 
 # Python dependencies required by the app
 dependencies:
