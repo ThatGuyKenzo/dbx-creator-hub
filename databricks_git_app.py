@@ -17,6 +17,8 @@ DEPLOYMENT INSTRUCTIONS:
    - DATABRICKS_SCHEMA
    - AI_AGENT_ENDPOINT (for chatbot feature)
    - DATABRICKS_DASHBOARD_ID (for embedded dashboard feature)
+   - DATABRICKS_WORKSPACE_ID (for embedded dashboard feature)
+   - SOCIAL_LISTENING_URL (for social listening feature)
 4. Deploy as a Databricks App using the Databricks CLI or UI
 
 For more info on Databricks Apps:
@@ -36,11 +38,12 @@ import requests
 import json
 
 # VERSION IDENTIFIER - Check logs to confirm new version is loaded
-APP_VERSION = "v7.1_GITHUB_SAFE_USER_DISPLAY"
+APP_VERSION = "v7.2_GITHUB_SAFE_SOCIAL_LISTENING"
 print(f"\n{'='*80}")
 print(f"🚀 LOADING APP VERSION: {APP_VERSION}")
 print(f"   🔒 GitHub-safe version - all credentials from environment variables")
 print(f"   👤 Added user login display in top-right corner")
+print(f"   🎧 Added Social Listening sidebar option with iframe embedding")
 print(f"{'='*80}\n")
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -93,11 +96,15 @@ DATABRICKS_DASHBOARD_ID = os.getenv('DATABRICKS_DASHBOARD_ID', 'your-dashboard-i
 workspace_id_match = re.search(r'[?&]o=(\d+)', DATABRICKS_CONFIG['server_hostname'] or '')
 DATABRICKS_WORKSPACE_ID = workspace_id_match.group(1) if workspace_id_match else os.getenv('DATABRICKS_WORKSPACE_ID', 'your-workspace-id')
 
+# Social Listening app configuration - from environment variables
+SOCIAL_LISTENING_URL = os.getenv('SOCIAL_LISTENING_URL', 'https://your-social-listening-app.databricksapps.com/')
+
 print(f"🔧 Configuration loaded:")
 print(f"   • Server: {server_hostname[:50]}...")
 print(f"   • Schema: {SCHEMA_NAME}")
 print(f"   • AI Endpoint: {AI_AGENT_ENDPOINT}")
 print(f"   • Dashboard ID: {DATABRICKS_DASHBOARD_ID[:20]}...")
+print(f"   • Social Listening URL: {SOCIAL_LISTENING_URL[:50]}...")
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 🗄️ DATA FETCHING
@@ -660,6 +667,21 @@ app.layout = html.Div([
                     'cursor': 'pointer',
                     'fontFamily': 'Arial Black, sans-serif',
                     'boxShadow': '0 0 10px #FF8800'
+                }),
+                
+                html.Button('🎧 Social Listening', id='menu-social-listening', n_clicks=0, style={
+                    'width': '100%',
+                    'padding': '15px',
+                    'marginBottom': '10px',
+                    'fontSize': '18px',
+                    'fontWeight': 'bold',
+                    'backgroundColor': '#FFD700',
+                    'color': '#000000',
+                    'border': 'none',
+                    'borderRadius': '10px',
+                    'cursor': 'pointer',
+                    'fontFamily': 'Arial Black, sans-serif',
+                    'boxShadow': '0 0 10px #FFD700'
                 })
             ])
         ]
@@ -966,6 +988,38 @@ app.layout = html.Div([
                 html.Iframe(
                     # Use environment variables for dashboard URL
                     src=f"https://{server_hostname}/embed/dashboardsv3/{DATABRICKS_DASHBOARD_ID}?o={DATABRICKS_WORKSPACE_ID}",
+                    style={
+                        'width': '100%',
+                        'height': '1000px',
+                        'border': 'none',
+                        'borderRadius': '10px'
+                    }
+                )
+            ], style={
+                'maxWidth': '1400px',
+                'margin': '0 auto',
+                'padding': '0 20px 40px 20px'
+            })
+        ]),
+        
+        # Social Listening content (hidden by default)
+        html.Div(id='social-listening-content', style={'display': 'none'}, children=[
+            html.H2(
+                '🎧 SOCIAL LISTENING',
+                style={
+                    'textAlign': 'center',
+                    'color': '#FFD700',
+                    'fontFamily': 'Arial Black, sans-serif',
+                    'fontSize': '28px',
+                    'margin': '40px 0 20px 0',
+                    'textShadow': '0 0 15px #FFD700'
+                }
+            ),
+            
+            html.Div([
+                html.Iframe(
+                    # Use environment variable for social listening URL
+                    src=SOCIAL_LISTENING_URL,
                     style={
                         'width': '100%',
                         'height': '1000px',
@@ -1413,28 +1467,33 @@ def toggle_sidebar(hamburger_clicks, overlay_clicks, is_open):
 @app.callback(
     [Output('current-page', 'data'),
      Output('home-content', 'style'),
-     Output('dashboard-content', 'style')],
+     Output('dashboard-content', 'style'),
+     Output('social-listening-content', 'style')],
     [Input('menu-home', 'n_clicks'),
      Input('menu-dashboard', 'n_clicks'),
      Input('menu-islands', 'n_clicks'),
-     Input('menu-stats', 'n_clicks')],
+     Input('menu-stats', 'n_clicks'),
+     Input('menu-social-listening', 'n_clicks')],
     [State('current-page', 'data')]
 )
-def navigate_pages(home_clicks, dashboard_clicks, islands_clicks, stats_clicks, current_page):
-    """Navigate between home and dashboard pages"""
+def navigate_pages(home_clicks, dashboard_clicks, islands_clicks, stats_clicks, social_clicks, current_page):
+    """Navigate between home, dashboard, and social listening pages"""
     ctx = callback_context
     if not ctx.triggered:
         # Initial load - show home
-        return 'home', {'display': 'block'}, {'display': 'none'}
+        return 'home', {'display': 'block'}, {'display': 'none'}, {'display': 'none'}
     
     trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
     
     if trigger_id == 'menu-home':
         print("📍 Navigating to Home")
-        return 'home', {'display': 'block'}, {'display': 'none'}
+        return 'home', {'display': 'block'}, {'display': 'none'}, {'display': 'none'}
     elif trigger_id == 'menu-dashboard':
         print("📍 Navigating to Analytics Dashboard")
-        return 'dashboard', {'display': 'none'}, {'display': 'block'}
+        return 'dashboard', {'display': 'none'}, {'display': 'block'}, {'display': 'none'}
+    elif trigger_id == 'menu-social-listening':
+        print("📍 Navigating to Social Listening")
+        return 'social-listening', {'display': 'none'}, {'display': 'none'}, {'display': 'block'}
     elif trigger_id == 'menu-islands' or trigger_id == 'menu-stats':
         print(f"⏸️ {trigger_id} clicked - not yet implemented")
         # Don't navigate, keep current page
