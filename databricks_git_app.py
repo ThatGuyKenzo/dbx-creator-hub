@@ -1891,6 +1891,50 @@ def navigate_pages(home_clicks, dashboard_clicks, islands_clicks, stats_clicks, 
     from dash.exceptions import PreventUpdate
     raise PreventUpdate
 
+# Close sidebar when menu item is clicked
+@app.callback(
+    [Output('sidebar-open', 'data', allow_duplicate=True),
+     Output('sidebar', 'style', allow_duplicate=True),
+     Output('sidebar-overlay', 'style', allow_duplicate=True)],
+    [Input('menu-home', 'n_clicks'),
+     Input('menu-dashboard', 'n_clicks'),
+     Input('menu-islands', 'n_clicks'),
+     Input('menu-stats', 'n_clicks'),
+     Input('menu-social-listening', 'n_clicks')],
+    prevent_initial_call=True
+)
+def close_sidebar_on_navigate(home_clicks, dashboard_clicks, islands_clicks, stats_clicks, social_clicks):
+    """Close sidebar when any menu item is clicked"""
+    # Sidebar closed state
+    sidebar_style = {
+        'position': 'fixed',
+        'left': '-320px',
+        'top': '0',
+        'width': '300px',
+        'height': '100vh',
+        'backgroundColor': 'rgba(10, 10, 20, 0.98)',
+        'border': '2px solid #00D9FF',
+        'borderLeft': 'none',
+        'zIndex': '2000',
+        'transition': 'left 0.3s ease, visibility 0s linear 0.3s',
+        'padding': '20px',
+        'overflowY': 'auto',
+        'visibility': 'hidden'
+    }
+    
+    overlay_style = {
+        'position': 'fixed',
+        'top': '0',
+        'left': '0',
+        'width': '100%',
+        'height': '100vh',
+        'backgroundColor': 'rgba(0, 0, 0, 0.7)',
+        'zIndex': '1999',
+        'display': 'none'
+    }
+    
+    return False, sidebar_style, overlay_style
+
 # ═══════════════════════════════════════════════════════════════════════════
 # 🏃 RUN APPLICATION
 # ═══════════════════════════════════════════════════════════════════════════
