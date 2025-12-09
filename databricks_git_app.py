@@ -28,7 +28,7 @@ https://docs.databricks.com/en/dev-tools/databricks-apps/index.html
 import os
 import time
 import re
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import pandas as pd
 import plotly.graph_objects as go
 import dash
@@ -1578,7 +1578,9 @@ def update_stats(n):
             total_sessions = int(df['active_sessions'].sum())
             total_locations = len(df)
             avg_duration = df['avg_session_duration'].mean()
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            # Convert UTC to EST (UTC-5)
+            est = timezone(timedelta(hours=-5))
+            timestamp = datetime.now(timezone.utc).astimezone(est).strftime('%Y-%m-%d %H:%M:%S EST')
             
             return (
                 f"{total_sessions:,}",
