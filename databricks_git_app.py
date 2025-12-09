@@ -14,10 +14,10 @@ DEPLOYMENT INSTRUCTIONS:
    - DATABRICKS_SERVER_HOSTNAME
    - DATABRICKS_HTTP_PATH
    - DATABRICKS_TOKEN
-   - DATABRICKS_SCHEMA
+   - DATABRICKS_SCHEMA (optional, defaults to 'catalog.schema')
    - AI_AGENT_ENDPOINT (for chatbot feature)
-   - DATABRICKS_DASHBOARD_ID (for embedded dashboard feature)
-   - DATABRICKS_WORKSPACE_ID (for embedded dashboard feature)
+   - AI_BASE_URL (for chatbot feature)
+   - DATABRICKS_DASHBOARD_URL (for embedded dashboard)
    - SOCIAL_LISTENING_URL (for social listening feature)
 4. Deploy as a Databricks App using the Databricks CLI or UI
 
@@ -38,12 +38,11 @@ import requests
 import json
 
 # VERSION IDENTIFIER - Check logs to confirm new version is loaded
-APP_VERSION = "v7.2_GITHUB_SAFE_SOCIAL_LISTENING"
+APP_VERSION = "v8.0_GITHUB_SAFE"
 print(f"\n{'='*80}")
 print(f"🚀 LOADING APP VERSION: {APP_VERSION}")
 print(f"   🔒 GitHub-safe version - all credentials from environment variables")
-print(f"   👤 Added user login display in top-right corner")
-print(f"   🎧 Added Social Listening sidebar option with iframe embedding")
+print(f"   📊 Hard-coded insights + My Islands + Player Statistics pages")
 print(f"{'='*80}\n")
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -82,29 +81,8 @@ ROTATION_SPEED = 1.5  # degrees per frame
 INITIAL_ROTATION = -30  # starting longitude
 
 # AI Agent configuration - from environment variables
-AI_AGENT_ENDPOINT = os.getenv('AI_AGENT_ENDPOINT', 'your-ai-agent-endpoint')
-
-# Construct AI base URL from server hostname
-server_hostname = DATABRICKS_CONFIG['server_hostname'] or 'your-workspace.azuredatabricks.net'
-# Remove https:// if present and any trailing query params
-server_hostname = server_hostname.replace('https://', '').replace('http://', '').split('?')[0]
-AI_BASE_URL = f"https://{server_hostname}/serving-endpoints"
-
-# Dashboard configuration - from environment variables
-DATABRICKS_DASHBOARD_ID = os.getenv('DATABRICKS_DASHBOARD_ID', 'your-dashboard-id')
-# Extract workspace ID from URL if present (e.g., ?o=1234567890123456)
-workspace_id_match = re.search(r'[?&]o=(\d+)', DATABRICKS_CONFIG['server_hostname'] or '')
-DATABRICKS_WORKSPACE_ID = workspace_id_match.group(1) if workspace_id_match else os.getenv('DATABRICKS_WORKSPACE_ID', 'your-workspace-id')
-
-# Social Listening app configuration - from environment variables
-SOCIAL_LISTENING_URL = os.getenv('SOCIAL_LISTENING_URL', 'https://your-social-listening-app.databricksapps.com/')
-
-print(f"🔧 Configuration loaded:")
-print(f"   • Server: {server_hostname[:50]}...")
-print(f"   • Schema: {SCHEMA_NAME}")
-print(f"   • AI Endpoint: {AI_AGENT_ENDPOINT}")
-print(f"   • Dashboard ID: {DATABRICKS_DASHBOARD_ID[:20]}...")
-print(f"   • Social Listening URL: {SOCIAL_LISTENING_URL[:50]}...")
+AI_AGENT_ENDPOINT = os.getenv('AI_AGENT_ENDPOINT', 'your-endpoint-name')
+AI_BASE_URL = os.getenv('AI_BASE_URL', 'https://your-workspace.azuredatabricks.net/serving-endpoints')
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 🗄️ DATA FETCHING
@@ -786,7 +764,7 @@ app.layout = html.Div([
         html.Div([
             html.Div([
                 html.Span('🎮', style={'fontSize': '24px', 'marginRight': '10px'}),
-                html.Span(id='total-sessions', style={'fontSize': '24px', 'fontWeight': 'bold', 'color': '#00D9FF'}),
+                html.Span('---', id='total-sessions', style={'fontSize': '24px', 'fontWeight': 'bold', 'color': '#00D9FF'}),
                 html.Span(' ACTIVE SESSIONS', style={'fontSize': '14px', 'color': '#FF006E', 'marginLeft': '10px'})
             ], style={
                 'display': 'inline-block',
@@ -798,7 +776,7 @@ app.layout = html.Div([
             }),
             html.Div([
                 html.Span('🌍', style={'fontSize': '24px', 'marginRight': '10px'}),
-                html.Span(id='total-locations', style={'fontSize': '24px', 'fontWeight': 'bold', 'color': '#FF006E'}),
+                html.Span('---', id='total-locations', style={'fontSize': '24px', 'fontWeight': 'bold', 'color': '#FF006E'}),
                 html.Span(' LOCATIONS', style={'fontSize': '14px', 'color': '#00D9FF', 'marginLeft': '10px'})
             ], style={
                 'display': 'inline-block',
@@ -810,7 +788,7 @@ app.layout = html.Div([
             }),
             html.Div([
                 html.Span('⏱️', style={'fontSize': '24px', 'marginRight': '10px'}),
-                html.Span(id='avg-duration', style={'fontSize': '24px', 'fontWeight': 'bold', 'color': '#FF8800'}),
+                html.Span('---', id='avg-duration', style={'fontSize': '24px', 'fontWeight': 'bold', 'color': '#FF8800'}),
                 html.Span(' MIN AVG', style={'fontSize': '14px', 'color': '#00D9FF', 'marginLeft': '10px'})
             ], style={
                 'display': 'inline-block',
@@ -829,7 +807,7 @@ app.layout = html.Div([
         # Last updated timestamp
         html.Div([
             html.Span('Last Updated: ', style={'color': '#888', 'fontSize': '12px'}),
-            html.Span(id='last-updated', style={'color': '#00D9FF', 'fontSize': '12px', 'fontWeight': 'bold'})
+            html.Span('Loading...', id='last-updated', style={'color': '#00D9FF', 'fontSize': '12px', 'fontWeight': 'bold'})
         ], style={'textAlign': 'center', 'marginBottom': '40px'}),
         
         # Key Insights Section
@@ -986,8 +964,7 @@ app.layout = html.Div([
             
             html.Div([
                 html.Iframe(
-                    # Use environment variables for dashboard URL
-                    src=f"https://{server_hostname}/embed/dashboardsv3/{DATABRICKS_DASHBOARD_ID}?o={DATABRICKS_WORKSPACE_ID}",
+                    src=os.getenv('DATABRICKS_DASHBOARD_URL', 'https://your-workspace.azuredatabricks.net/embed/dashboardsv3/YOUR_DASHBOARD_ID'),
                     style={
                         'width': '100%',
                         'height': '1000px',
@@ -1018,8 +995,7 @@ app.layout = html.Div([
             
             html.Div([
                 html.Iframe(
-                    # Use environment variable for social listening URL
-                    src=SOCIAL_LISTENING_URL,
+                    src=os.getenv('SOCIAL_LISTENING_URL', 'https://your-social-listening-app.databricksapps.com/'),
                     style={
                         'width': '100%',
                         'height': '1000px',
@@ -1030,6 +1006,472 @@ app.layout = html.Div([
             ], style={
                 'maxWidth': '1400px',
                 'margin': '0 auto',
+                'padding': '0 20px 40px 20px'
+            })
+        ]),
+        
+        # My Islands content (hidden by default)
+        html.Div(id='islands-content', style={'display': 'none'}, children=[
+            html.H2(
+                '🏝️ MY ISLANDS',
+                style={
+                    'textAlign': 'center',
+                    'color': '#9D4EDD',
+                    'fontFamily': 'Arial Black, sans-serif',
+                    'fontSize': '32px',
+                    'margin': '40px 0 30px 0',
+                    'textShadow': '0 0 20px #9D4EDD'
+                }
+            ),
+            
+            # Islands summary cards
+            html.Div([
+                # Island 1: Team Deathmatch Arena 9
+                html.Div([
+                    html.Div([
+                        html.H3('⚔️ TEAM DEATHMATCH ARENA 9', style={
+                            'color': '#00D9FF',
+                            'fontFamily': 'Arial Black, sans-serif',
+                            'fontSize': '22px',
+                            'marginBottom': '15px',
+                            'textShadow': '0 0 10px #00D9FF'
+                        }),
+                        html.Div([
+                            html.Div([
+                                html.Span('📊 Total Plays: ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('342', style={'color': '#FF006E', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ], style={'marginBottom': '10px'}),
+                            html.Div([
+                                html.Span('⭐ Average Rating: ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('4.65 / 5.00', style={'color': '#FFD700', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ], style={'marginBottom': '10px'}),
+                            html.Div([
+                                html.Span('👥 Active Players (7d): ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('127', style={'color': '#00D9FF', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ], style={'marginBottom': '10px'}),
+                            html.Div([
+                                html.Span('🔥 Peak Concurrent: ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('23', style={'color': '#FF8800', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ], style={'marginBottom': '10px'}),
+                            html.Div([
+                                html.Span('⏱️ Avg Session: ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('18.5 min', style={'color': '#9D4EDD', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ])
+                        ])
+                    ], style={
+                        'backgroundColor': 'rgba(0, 217, 255, 0.1)',
+                        'border': '3px solid #00D9FF',
+                        'borderRadius': '15px',
+                        'padding': '30px',
+                        'boxShadow': '0 0 20px rgba(0, 217, 255, 0.3)'
+                    })
+                ], style={'marginBottom': '30px'}),
+                
+                # Island 2: Prop Hunt Arena 21
+                html.Div([
+                    html.Div([
+                        html.H3('🔍 PROP HUNT ARENA 21', style={
+                            'color': '#FF006E',
+                            'fontFamily': 'Arial Black, sans-serif',
+                            'fontSize': '22px',
+                            'marginBottom': '15px',
+                            'textShadow': '0 0 10px #FF006E'
+                        }),
+                        html.Div([
+                            html.Div([
+                                html.Span('📊 Total Plays: ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('338', style={'color': '#FF006E', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ], style={'marginBottom': '10px'}),
+                            html.Div([
+                                html.Span('⭐ Average Rating: ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('4.71 / 5.00', style={'color': '#FFD700', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ], style={'marginBottom': '10px'}),
+                            html.Div([
+                                html.Span('👥 Active Players (7d): ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('134', style={'color': '#00D9FF', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ], style={'marginBottom': '10px'}),
+                            html.Div([
+                                html.Span('🔥 Peak Concurrent: ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('19', style={'color': '#FF8800', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ], style={'marginBottom': '10px'}),
+                            html.Div([
+                                html.Span('⏱️ Avg Session: ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('22.3 min', style={'color': '#9D4EDD', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ])
+                        ])
+                    ], style={
+                        'backgroundColor': 'rgba(255, 0, 110, 0.1)',
+                        'border': '3px solid #FF006E',
+                        'borderRadius': '15px',
+                        'padding': '30px',
+                        'boxShadow': '0 0 20px rgba(255, 0, 110, 0.3)'
+                    })
+                ], style={'marginBottom': '30px'}),
+                
+                # Island 3: Parkour Arena 16
+                html.Div([
+                    html.Div([
+                        html.H3('🏃 PARKOUR ARENA 16', style={
+                            'color': '#FF8800',
+                            'fontFamily': 'Arial Black, sans-serif',
+                            'fontSize': '22px',
+                            'marginBottom': '15px',
+                            'textShadow': '0 0 10px #FF8800'
+                        }),
+                        html.Div([
+                            html.Div([
+                                html.Span('📊 Total Plays: ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('333', style={'color': '#FF006E', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ], style={'marginBottom': '10px'}),
+                            html.Div([
+                                html.Span('⭐ Average Rating: ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('4.83 / 5.00', style={'color': '#FFD700', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ], style={'marginBottom': '10px'}),
+                            html.Div([
+                                html.Span('👥 Active Players (7d): ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('118', style={'color': '#00D9FF', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ], style={'marginBottom': '10px'}),
+                            html.Div([
+                                html.Span('🔥 Peak Concurrent: ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('16', style={'color': '#FF8800', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ], style={'marginBottom': '10px'}),
+                            html.Div([
+                                html.Span('⏱️ Avg Session: ', style={'color': '#888', 'fontSize': '16px'}),
+                                html.Span('15.7 min', style={'color': '#9D4EDD', 'fontSize': '18px', 'fontWeight': 'bold'})
+                            ])
+                        ])
+                    ], style={
+                        'backgroundColor': 'rgba(255, 136, 0, 0.1)',
+                        'border': '3px solid #FF8800',
+                        'borderRadius': '15px',
+                        'padding': '30px',
+                        'boxShadow': '0 0 20px rgba(255, 136, 0, 0.3)'
+                    })
+                ], style={'marginBottom': '30px'}),
+                
+                # Overall Performance Summary
+                html.Div([
+                    html.H3('📈 PORTFOLIO PERFORMANCE', style={
+                        'color': '#9D4EDD',
+                        'fontFamily': 'Arial Black, sans-serif',
+                        'fontSize': '24px',
+                        'marginBottom': '20px',
+                        'textAlign': 'center',
+                        'textShadow': '0 0 15px #9D4EDD'
+                    }),
+                    html.Div([
+                        html.Div([
+                            html.Div('1,013', style={'fontSize': '32px', 'fontWeight': 'bold', 'color': '#00D9FF'}),
+                            html.Div('Total Plays', style={'fontSize': '14px', 'color': '#888', 'marginTop': '5px'})
+                        ], style={
+                            'flex': '1',
+                            'textAlign': 'center',
+                            'padding': '20px',
+                            'backgroundColor': 'rgba(0, 217, 255, 0.1)',
+                            'borderRadius': '10px',
+                            'border': '2px solid #00D9FF',
+                            'margin': '0 10px'
+                        }),
+                        html.Div([
+                            html.Div('4.73', style={'fontSize': '32px', 'fontWeight': 'bold', 'color': '#FFD700'}),
+                            html.Div('Avg Rating', style={'fontSize': '14px', 'color': '#888', 'marginTop': '5px'})
+                        ], style={
+                            'flex': '1',
+                            'textAlign': 'center',
+                            'padding': '20px',
+                            'backgroundColor': 'rgba(255, 215, 0, 0.1)',
+                            'borderRadius': '10px',
+                            'border': '2px solid #FFD700',
+                            'margin': '0 10px'
+                        }),
+                        html.Div([
+                            html.Div('379', style={'fontSize': '32px', 'fontWeight': 'bold', 'color': '#FF006E'}),
+                            html.Div('Unique Players', style={'fontSize': '14px', 'color': '#888', 'marginTop': '5px'})
+                        ], style={
+                            'flex': '1',
+                            'textAlign': 'center',
+                            'padding': '20px',
+                            'backgroundColor': 'rgba(255, 0, 110, 0.1)',
+                            'borderRadius': '10px',
+                            'border': '2px solid #FF006E',
+                            'margin': '0 10px'
+                        })
+                    ], style={'display': 'flex', 'justifyContent': 'center', 'marginBottom': '20px'})
+                ], style={
+                    'backgroundColor': 'rgba(157, 78, 221, 0.1)',
+                    'border': '3px solid #9D4EDD',
+                    'borderRadius': '15px',
+                    'padding': '30px',
+                    'boxShadow': '0 0 20px rgba(157, 78, 221, 0.3)'
+                })
+                
+            ], style={
+                'maxWidth': '1000px',
+                'margin': '0 auto',
+                'padding': '0 20px 40px 20px'
+            })
+        ]),
+        
+        # Player Statistics content (hidden by default)
+        html.Div(id='stats-content', style={'display': 'none'}, children=[
+            html.H2(
+                '📊 PLAYER STATISTICS',
+                style={
+                    'textAlign': 'center',
+                    'color': '#FF006E',
+                    'fontFamily': 'Arial Black, sans-serif',
+                    'fontSize': '32px',
+                    'margin': '40px 0 30px 0',
+                    'textShadow': '0 0 20px #FF006E'
+                }
+            ),
+            
+            html.Div([
+                html.P('Top players currently active on your islands:', style={
+                    'textAlign': 'center',
+                    'color': '#888',
+                    'fontSize': '16px',
+                    'marginBottom': '30px'
+                }),
+                
+                # Player cards grid
+                html.Div([
+                    # Player 1
+                    html.Div([
+                        html.Div([
+                            html.Div('🥇', style={'fontSize': '40px', 'marginBottom': '10px'}),
+                            html.H4('xXProGamer2024Xx', style={
+                                'color': '#FFD700',
+                                'fontFamily': 'Arial Black, sans-serif',
+                                'fontSize': '18px',
+                                'marginBottom': '15px'
+                            }),
+                            html.Div([
+                                html.Div([
+                                    html.Span('🎮 Sessions: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('47', style={'color': '#00D9FF', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('⏱️ Total Time: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('12.3h', style={'color': '#FF006E', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('🏆 Win Rate: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('68%', style={'color': '#FFD700', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('⭐ Favorite: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('Team DM 9', style={'color': '#9D4EDD', 'fontWeight': 'bold', 'fontSize': '13px'})
+                                ])
+                            ])
+                        ], style={
+                            'backgroundColor': 'rgba(255, 215, 0, 0.1)',
+                            'border': '2px solid #FFD700',
+                            'borderRadius': '15px',
+                            'padding': '25px',
+                            'textAlign': 'center',
+                            'boxShadow': '0 0 15px rgba(255, 215, 0, 0.3)'
+                        })
+                    ], style={'marginBottom': '20px'}),
+                    
+                    # Player 2
+                    html.Div([
+                        html.Div([
+                            html.Div('🥈', style={'fontSize': '40px', 'marginBottom': '10px'}),
+                            html.H4('NinjaKiller3000', style={
+                                'color': '#00D9FF',
+                                'fontFamily': 'Arial Black, sans-serif',
+                                'fontSize': '18px',
+                                'marginBottom': '15px'
+                            }),
+                            html.Div([
+                                html.Div([
+                                    html.Span('🎮 Sessions: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('42', style={'color': '#00D9FF', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('⏱️ Total Time: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('11.8h', style={'color': '#FF006E', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('🏆 Win Rate: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('64%', style={'color': '#FFD700', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('⭐ Favorite: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('Prop Hunt 21', style={'color': '#9D4EDD', 'fontWeight': 'bold', 'fontSize': '13px'})
+                                ])
+                            ])
+                        ], style={
+                            'backgroundColor': 'rgba(0, 217, 255, 0.1)',
+                            'border': '2px solid #00D9FF',
+                            'borderRadius': '15px',
+                            'padding': '25px',
+                            'textAlign': 'center',
+                            'boxShadow': '0 0 15px rgba(0, 217, 255, 0.3)'
+                        })
+                    ], style={'marginBottom': '20px'}),
+                    
+                    # Player 3
+                    html.Div([
+                        html.Div([
+                            html.Div('🥉', style={'fontSize': '40px', 'marginBottom': '10px'}),
+                            html.H4('ShadowRunner99', style={
+                                'color': '#FF8800',
+                                'fontFamily': 'Arial Black, sans-serif',
+                                'fontSize': '18px',
+                                'marginBottom': '15px'
+                            }),
+                            html.Div([
+                                html.Div([
+                                    html.Span('🎮 Sessions: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('39', style={'color': '#00D9FF', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('⏱️ Total Time: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('9.2h', style={'color': '#FF006E', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('🏆 Win Rate: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('61%', style={'color': '#FFD700', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('⭐ Favorite: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('Parkour 16', style={'color': '#9D4EDD', 'fontWeight': 'bold', 'fontSize': '13px'})
+                                ])
+                            ])
+                        ], style={
+                            'backgroundColor': 'rgba(255, 136, 0, 0.1)',
+                            'border': '2px solid #FF8800',
+                            'borderRadius': '15px',
+                            'padding': '25px',
+                            'textAlign': 'center',
+                            'boxShadow': '0 0 15px rgba(255, 136, 0, 0.3)'
+                        })
+                    ], style={'marginBottom': '20px'}),
+                    
+                    # Player 4
+                    html.Div([
+                        html.Div([
+                            html.Div('4️⃣', style={'fontSize': '40px', 'marginBottom': '10px'}),
+                            html.H4('FortniteQueen', style={
+                                'color': '#FF006E',
+                                'fontFamily': 'Arial Black, sans-serif',
+                                'fontSize': '18px',
+                                'marginBottom': '15px'
+                            }),
+                            html.Div([
+                                html.Div([
+                                    html.Span('🎮 Sessions: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('35', style={'color': '#00D9FF', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('⏱️ Total Time: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('8.7h', style={'color': '#FF006E', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('🏆 Win Rate: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('59%', style={'color': '#FFD700', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('⭐ Favorite: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('Team DM 9', style={'color': '#9D4EDD', 'fontWeight': 'bold', 'fontSize': '13px'})
+                                ])
+                            ])
+                        ], style={
+                            'backgroundColor': 'rgba(255, 0, 110, 0.1)',
+                            'border': '2px solid #FF006E',
+                            'borderRadius': '15px',
+                            'padding': '25px',
+                            'textAlign': 'center',
+                            'boxShadow': '0 0 15px rgba(255, 0, 110, 0.3)'
+                        })
+                    ], style={'marginBottom': '20px'}),
+                    
+                    # Player 5
+                    html.Div([
+                        html.Div([
+                            html.Div('5️⃣', style={'fontSize': '40px', 'marginBottom': '10px'}),
+                            html.H4('EpicBuilder777', style={
+                                'color': '#9D4EDD',
+                                'fontFamily': 'Arial Black, sans-serif',
+                                'fontSize': '18px',
+                                'marginBottom': '15px'
+                            }),
+                            html.Div([
+                                html.Div([
+                                    html.Span('🎮 Sessions: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('33', style={'color': '#00D9FF', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('⏱️ Total Time: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('7.9h', style={'color': '#FF006E', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('🏆 Win Rate: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('57%', style={'color': '#FFD700', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('⭐ Favorite: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('Prop Hunt 21', style={'color': '#9D4EDD', 'fontWeight': 'bold', 'fontSize': '13px'})
+                                ])
+                            ])
+                        ], style={
+                            'backgroundColor': 'rgba(157, 78, 221, 0.1)',
+                            'border': '2px solid #9D4EDD',
+                            'borderRadius': '15px',
+                            'padding': '25px',
+                            'textAlign': 'center',
+                            'boxShadow': '0 0 15px rgba(157, 78, 221, 0.3)'
+                        })
+                    ], style={'marginBottom': '20px'}),
+                    
+                    # Player 6
+                    html.Div([
+                        html.Div([
+                            html.Div('6️⃣', style={'fontSize': '40px', 'marginBottom': '10px'}),
+                            html.H4('SnipeGod420', style={
+                                'color': '#00D9FF',
+                                'fontFamily': 'Arial Black, sans-serif',
+                                'fontSize': '18px',
+                                'marginBottom': '15px'
+                            }),
+                            html.Div([
+                                html.Div([
+                                    html.Span('🎮 Sessions: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('31', style={'color': '#00D9FF', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('⏱️ Total Time: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('7.1h', style={'color': '#FF006E', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('🏆 Win Rate: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('55%', style={'color': '#FFD700', 'fontWeight': 'bold'})
+                                ], style={'marginBottom': '8px'}),
+                                html.Div([
+                                    html.Span('⭐ Favorite: ', style={'color': '#888', 'fontSize': '14px'}),
+                                    html.Span('Team DM 9', style={'color': '#9D4EDD', 'fontWeight': 'bold', 'fontSize': '13px'})
+                                ])
+                            ])
+                        ], style={
+                            'backgroundColor': 'rgba(0, 217, 255, 0.1)',
+                            'border': '2px solid #00D9FF',
+                            'borderRadius': '15px',
+                            'padding': '25px',
+                            'textAlign': 'center',
+                            'boxShadow': '0 0 15px rgba(0, 217, 255, 0.3)'
+                        })
+                    ], style={'marginBottom': '20px'})
+                    
+                ], style={
+                    'display': 'grid',
+                    'gridTemplateColumns': 'repeat(auto-fit, minmax(280px, 1fr))',
+                    'gap': '20px',
+                    'maxWidth': '1200px',
+                    'margin': '0 auto'
+                })
+            ], style={
                 'padding': '0 20px 40px 20px'
             })
         ]),
@@ -1073,22 +1515,20 @@ print("🔧 Registering rotate_globe callback...")
     [State('rotation-angle', 'data')]
 )
 def rotate_globe(n_intervals, current_angle):
-    """Rotate the globe continuously and automatically"""
-    # Only log first callback and data refresh events (not every 100ms)
+    """Rotate the globe continuously and fetch data once at startup"""
+    # Only log first callback
     if n_intervals == 0:
         print(f"✅ rotate_globe callback initialized")
     
-    # Fetch real data on first callback (n_intervals=1) and then every 3000 intervals (5 minutes at 100ms per interval)
-    # This ensures we get real data immediately after app starts
-    if n_intervals == 1 or n_intervals % 3000 == 0:
-        # Use global variable to cache data between rotations
+    # Fetch data ONCE on first callback only
+    if n_intervals == 1:
         global _cached_globe_data
         try:
-            print(f"🔄 Fetching real data at interval {n_intervals}...")
+            print(f"🔄 Fetching data at startup...")
             _cached_globe_data = fetch_active_players()
             print(f"✅ Data loaded: {len(_cached_globe_data)} locations")
         except Exception as e:
-            print(f"❌ Failed to refresh data: {e}")
+            print(f"❌ Failed to fetch data: {e}")
             import traceback
             traceback.print_exc()
             if '_cached_globe_data' not in globals():
@@ -1125,27 +1565,31 @@ def rotate_globe(n_intervals, current_angle):
 )
 def update_stats(n):
     """Update statistics displayed below the globe"""
-    # Fetch data on first call (n=0), second call (n=1), and then every 3000 intervals (5 minutes at 100ms per interval)
-    if n == 0 or n == 1 or n % 3000 == 0:
-        # Use cached data if available to match globe display
+    # Try to update at intervals 2-10 (after data fetch at n=1)
+    # This ensures stats load even if data fetch is slow
+    if n >= 2 and n <= 10:
+        # Use cached data
         global _cached_globe_data
-        df = _cached_globe_data if '_cached_globe_data' in globals() and _cached_globe_data is not None else fetch_active_players()
         
-        total_sessions = int(df['active_sessions'].sum())
-        total_locations = len(df)
-        avg_duration = df['avg_session_duration'].mean()
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        
-        return (
-            f"{total_sessions:,}",
-            f"{total_locations:,}",
-            f"{avg_duration:.1f}",
-            timestamp
-        )
-    else:
-        # Return current values without fetching new data
-        from dash.exceptions import PreventUpdate
-        raise PreventUpdate
+        # Check if we have real data (not just sample data from initialization)
+        if '_cached_globe_data' in globals() and _cached_globe_data is not None:
+            df = _cached_globe_data
+            
+            total_sessions = int(df['active_sessions'].sum())
+            total_locations = len(df)
+            avg_duration = df['avg_session_duration'].mean()
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            
+            return (
+                f"{total_sessions:,}",
+                f"{total_locations:,}",
+                f"{avg_duration:.1f}",
+                timestamp
+            )
+    
+    # Don't update on other intervals
+    from dash.exceptions import PreventUpdate
+    raise PreventUpdate
 
 print("🔧 Registering chat_interaction callback...")
 
@@ -1255,10 +1699,10 @@ print("🔧 Registering insights callback...")
     State('insights-data', 'data')
 )
 def fetch_and_display_insights(n_intervals, current_insights):
-    """Fetch key insights from AI agent once on load and display them"""
+    """Display hard-coded key insights"""
     print(f"📊 Insights callback triggered: n_intervals={n_intervals}, has_data={current_insights is not None}")
     
-    # Only fetch once
+    # Only load once
     if current_insights is not None:
         print("⏭️ Already have insights, skipping")
         from dash.exceptions import PreventUpdate
@@ -1270,61 +1714,26 @@ def fetch_and_display_insights(n_intervals, current_insights):
         from dash.exceptions import PreventUpdate
         raise PreventUpdate
     
-    print("📊 Fetching weekly insights from AI agent...")
+    print("📊 Loading hard-coded insights...")
     
-    # Create a conversation with just the insights request
-    insights_request = [{
-        'role': 'user',
-        'content': 'What are my key insights for this week? Please organize your response into two sections: "Island Overview" and "Strategic Recommendations".'
-    }]
+    # Hard-coded insights content
+    island_overview_text = """Based on your player data, here are your key insights for this week:
+
+• Your three active islands demonstrate strong performance across diverse game modes
+
+• Parkour Arena 16 leads in player satisfaction at a 4.83 rating
+
+• All three islands maintain consistent engagement with over 330 plays each"""
     
-    # Get response from AI agent
-    insights_response = get_ai_response(insights_request)
-    
-    print(f"✅ Insights received: {len(insights_response)} characters")
-    print(f"🔍 Raw response preview: {insights_response[:200]}")
-    
-    # Clean up markdown formatting issues
-    # Multiple aggressive cleaning passes
-    
-    # Clean up markdown - remove all asterisks and bullet markers
-    cleaned_lines = []
-    for line in insights_response.split('\n'):
-        # Remove lines that are ONLY asterisks (any number)
-        stripped = line.strip()
-        if stripped and re.match(r'^\*+$', stripped):
-            print(f"🧹 Removing line with only asterisks: '{line}'")
-            continue
-        
-        # Remove bullet point markers from lines (both * and -)
-        # Remove leading "* " or "- " from lines
-        cleaned_line = re.sub(r'^\s*[\*\-]\s+', '', line)
-        cleaned_lines.append(cleaned_line)
-    
-    insights_response = '\n'.join(cleaned_lines)
-    
-    # Remove standalone ** patterns
-    insights_response = re.sub(r'\n\s*\*+\s*\n', '\n\n', insights_response)
-    insights_response = re.sub(r'^\s*\*+\s*\n', '', insights_response)
-    insights_response = re.sub(r'\n\s*\*+\s*$', '', insights_response)
-    
-    # Remove multiple consecutive blank lines
-    insights_response = re.sub(r'\n\s*\n\s*\n+', '\n\n', insights_response)
-    
-    # Trim leading/trailing whitespace
-    insights_response = insights_response.strip()
-    
-    print(f"✅ Cleaned response: {len(insights_response)} characters")
-    print(f"🔍 Cleaned preview: {insights_response[:200]}")
+    strategic_recommendations_text = """• Focus on leveraging the success of your Parkour Arena 16 by creating additional parkour content or incorporating its engaging elements into your other islands, as it shows the highest player satisfaction rating
+
+• Consider promoting your Team Deathmatch Arena 9 and Prop Hunt Arena 21 more actively to boost their play counts closer to your parkour island's performance level, as all three islands show strong potential with ratings above 4.6"""
     
     # Store the insights
     insights_data = {
-        'insights': insights_response,
+        'insights': 'Hard-coded insights',
         'timestamp': pd.Timestamp.now().isoformat()
     }
-    
-    # Parse and format the insights for display
-    insights_text = insights_response
     
     # Parse timestamp for display
     try:
@@ -1333,66 +1742,42 @@ def fetch_and_display_insights(n_intervals, current_insights):
     except:
         time_str = 'Recently'
     
-    # Split insights into sections
+    # Create sections with hard-coded content
     sections = []
     
-    # Try to find "Island Overview" and "Strategic Recommendations" sections
-    # Handle both plain text and markdown-formatted headers (e.g., **Header** or ## Header)
-    if 'Island Overview' in insights_text and 'Strategic Recommendations' in insights_text:
-        # Split on Strategic Recommendations (with or without markdown formatting)
-        parts = re.split(r'\*{0,2}\s*Strategic Recommendations\s*\*{0,2}', insights_text, flags=re.IGNORECASE)
-        
-        # Extract island part and remove the header
-        island_part = parts[0]
-        island_part = re.sub(r'\*{0,2}\s*Island Overview\s*\*{0,2}', '', island_part, flags=re.IGNORECASE).strip()
-        
-        # Extract strategic part
-        strategic_part = parts[1].strip() if len(parts) > 1 else ''
-        
-        # Clean up any remaining standalone ** at the start/end of sections
-        island_part = re.sub(r'^\*+\s*', '', island_part)
-        island_part = re.sub(r'\s*\*+$', '', island_part)
-        strategic_part = re.sub(r'^\*+\s*', '', strategic_part)
-        strategic_part = re.sub(r'\s*\*+$', '', strategic_part)
-        
-        sections.append(
-            html.Div([
-                html.H3('🏝️ Island Overview', style={
-                    'color': '#00D9FF',
-                    'fontFamily': 'Arial Black, sans-serif',
-                    'fontSize': '20px',
-                    'marginBottom': '15px',
-                    'borderBottom': '2px solid #00D9FF',
-                    'paddingBottom': '10px'
-                }),
-                dcc.Markdown(
-                    island_part,
-                    className='ai-markdown-content'
-                )
-            ], style={'marginBottom': '30px'})
-        )
-        
-        sections.append(
-            html.Div([
-                html.H3('⚡ Strategic Recommendations', style={
-                    'color': '#FF8800',
-                    'fontFamily': 'Arial Black, sans-serif',
-                    'fontSize': '20px',
-                    'marginBottom': '15px',
-                    'borderBottom': '2px solid #FF8800',
-                    'paddingBottom': '10px'
-                }),
-                dcc.Markdown(
-                    strategic_part,
-                    className='ai-markdown-content'
-                )
-            ], style={'marginBottom': '20px'})
-        )
-    else:
-        # If sections aren't clearly marked, show as one block
-        sections.append(
-            dcc.Markdown(insights_text, className='ai-markdown-content')
-        )
+    sections.append(
+        html.Div([
+            html.H3('🏝️ Island Overview', style={
+                'color': '#00D9FF',
+                'fontFamily': 'Arial Black, sans-serif',
+                'fontSize': '20px',
+                'marginBottom': '15px',
+                'borderBottom': '2px solid #00D9FF',
+                'paddingBottom': '10px'
+            }),
+            dcc.Markdown(
+                island_overview_text,
+                className='ai-markdown-content'
+            )
+        ], style={'marginBottom': '30px'})
+    )
+    
+    sections.append(
+        html.Div([
+            html.H3('⚡ Strategic Recommendations', style={
+                'color': '#FF8800',
+                'fontFamily': 'Arial Black, sans-serif',
+                'fontSize': '20px',
+                'marginBottom': '15px',
+                'borderBottom': '2px solid #FF8800',
+                'paddingBottom': '10px'
+            }),
+            dcc.Markdown(
+                strategic_recommendations_text,
+                className='ai-markdown-content'
+            )
+        ], style={'marginBottom': '20px'})
+    )
     
     # Create the complete display content
     display_content = html.Div([
@@ -1468,7 +1853,9 @@ def toggle_sidebar(hamburger_clicks, overlay_clicks, is_open):
     [Output('current-page', 'data'),
      Output('home-content', 'style'),
      Output('dashboard-content', 'style'),
-     Output('social-listening-content', 'style')],
+     Output('social-listening-content', 'style'),
+     Output('islands-content', 'style'),
+     Output('stats-content', 'style')],
     [Input('menu-home', 'n_clicks'),
      Input('menu-dashboard', 'n_clicks'),
      Input('menu-islands', 'n_clicks'),
@@ -1477,28 +1864,29 @@ def toggle_sidebar(hamburger_clicks, overlay_clicks, is_open):
     [State('current-page', 'data')]
 )
 def navigate_pages(home_clicks, dashboard_clicks, islands_clicks, stats_clicks, social_clicks, current_page):
-    """Navigate between home, dashboard, and social listening pages"""
+    """Navigate between all pages"""
     ctx = callback_context
     if not ctx.triggered:
-        # Initial load - show home
-        return 'home', {'display': 'block'}, {'display': 'none'}, {'display': 'none'}
+        # Initial load - show home, hide all others
+        return 'home', {'display': 'block'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
     
     trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
     
     if trigger_id == 'menu-home':
         print("📍 Navigating to Home")
-        return 'home', {'display': 'block'}, {'display': 'none'}, {'display': 'none'}
+        return 'home', {'display': 'block'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
+    elif trigger_id == 'menu-islands':
+        print("📍 Navigating to My Islands")
+        return 'islands', {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'block'}, {'display': 'none'}
+    elif trigger_id == 'menu-stats':
+        print("📍 Navigating to Player Statistics")
+        return 'stats', {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'block'}
     elif trigger_id == 'menu-dashboard':
         print("📍 Navigating to Analytics Dashboard")
-        return 'dashboard', {'display': 'none'}, {'display': 'block'}, {'display': 'none'}
+        return 'dashboard', {'display': 'none'}, {'display': 'block'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
     elif trigger_id == 'menu-social-listening':
         print("📍 Navigating to Social Listening")
-        return 'social-listening', {'display': 'none'}, {'display': 'none'}, {'display': 'block'}
-    elif trigger_id == 'menu-islands' or trigger_id == 'menu-stats':
-        print(f"⏸️ {trigger_id} clicked - not yet implemented")
-        # Don't navigate, keep current page
-        from dash.exceptions import PreventUpdate
-        raise PreventUpdate
+        return 'social-listening', {'display': 'none'}, {'display': 'none'}, {'display': 'block'}, {'display': 'none'}, {'display': 'none'}
     
     from dash.exceptions import PreventUpdate
     raise PreventUpdate
